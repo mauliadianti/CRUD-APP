@@ -17,7 +17,7 @@ app.use(
 app.use('/assets', express.static(path.join(__dirname, 'assets/img')))
 
 app.get('/', (req, res) => {
-  res.json({ info: 'Node.js, Express, and Postgres API' })
+  res.json({"message": 'welcome home'})
 })
 
 
