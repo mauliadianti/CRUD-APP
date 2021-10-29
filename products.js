@@ -2,23 +2,23 @@ const crypto = require('crypto')
 const dotenv = require('dotenv')
 dotenv.config()
 const {img,setupImg} = require('./photo.js')
+const db = require('./db')
 
 const Pool = require('pg').Pool
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'crud_user',
+  password: 'dian367',
+  port: 5432,
+})
 
 // const pool = new Pool({
-//   user: process.env.DB_USER,
-//   host: process.env.DB_HOST,
-//   database: process.env.DB_DATABASE,
-//   password: process.env.DB_PASSWORD,
-//   port: parseInt(process.env.DB_PORT, 10),
+//   connectionString: process.env.DATABASE_URL,
+//   ssl: {
+//     rejectUnauthorized: false
+//   }
 // })
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-})
 
 function Token(req){
   const authHeader = req.headers['authorization']
@@ -28,6 +28,7 @@ function Token(req){
 }
 
 class products{
+  //CREATE PRODUCT + UPLOAD PHOTO
   async insertNewProducts (req, res){
     try{
       if(Token(req)){
@@ -42,7 +43,8 @@ class products{
             const {name, qty, price} = req.body
             const photo = req.file.path
     
-            const result = await pool.query('INSERT INTO products (products_id, name, qty, price, photo) VALUES ($1, $2, $3, $4, $5)', [products_id, name, qty, price, photo])
+            const result = await pool
+              .query('INSERT INTO products (products_id, name, qty, price, photo) VALUES ($1, $2, $3, $4, $5)', [products_id, name, qty, price, photo])
               res.send({message: 'OK'})
           }
         })        
@@ -54,10 +56,11 @@ class products{
     }
   }
   
+  //READ ALL PRODUCT LISTED 
   async getProducts (req, res){
     try{
       if(Token(req)){
-        const result = await pool.query('SELECT * FROM products')
+        const result = await db.query('SELECT * FROM products')
          if(result.rowCount === 0) res.send({error: 'No data'}) 
          else{
           res.send({message: result.rows})
@@ -70,6 +73,7 @@ class products{
     }
   }
 
+  //READ PRODUCT BY ID
   async getProductsById (req, res){
     try{
       if(Token(req)){
@@ -89,20 +93,14 @@ class products{
     }
   }
   
+  //UPDATE PRODUCT
   async updateProducts (req, res){
     try{
       if(Token(req)){
         const products_id = req.params.products_id
         const value = req.body 
-
-        if(value['name']){
-          const result = await pool.query(`UPDATE products SET name=$1 WHERE products_id = $2`, [value['name'], products_id])
-          res.send({message: 'OK'})
-        }else if(value['qty']){
-          const result = await pool.query(`UPDATE products SET qty=$1 WHERE products_id = $2`, [value['qty'], products_id])
-          res.send({message: 'OK'})
-        }else if(value['price']){
-          const result = await pool.query(`UPDATE products SET price=$1 WHERE products_id = $2`, [value['price'], products_id])
+        for (const key in value){
+          const result = await pool.query(`UPDATE products SET ${key}=$1 WHERE products_id = $2`, [`${value[key]}`, products_id])
           res.send({message: 'OK'})
         }
       }else{
@@ -113,6 +111,7 @@ class products{
     }
   }
 
+  //DELETE PRODUCT BY ID
   async deleteProducts (req, res){
     try{
       if(Token(req)){
@@ -128,6 +127,7 @@ class products{
     }
   }
 
+  //UPDATE A PHOTO
   photo(req,res){
     try{
       if(Token(req)){        
